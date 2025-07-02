@@ -40,10 +40,11 @@
         Back
       </Link>
       <button
+        v-if="!hasOrder && !success && !submitting"
         @click="openModal"
         class="bg-blue-500 uppercase rounded-md text-white w-full sm:w-[255px] font-roboto font-bold hover:shadow-xl hover:shadow-blue-500/50 z-50 h-12 sm:h-16"
       >
-        Order Now
+          Order Now
       </button>
     </div>
 
@@ -60,19 +61,33 @@
         Please add your email and we will contact you shortly.
       </p>
       <form @submit.prevent="submitEmail" class="flex flex-col gap-4">
-        <input
-          v-model="email"
-          type="email"
-          required
-          placeholder="Enter your email"
-          class="border rounded-md px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-400"
-        />
-        <button
-          type="submit"
-          class="bg-blue-500 text-white font-bold rounded-md py-2 hover:bg-blue-600 transition"
-        >
-          Submit
-        </button>
+        <div v-if="success" class="text-green-600 font-semibold text-center">
+          ✅ Your order has been sent!
+        </div>
+
+        <template v-else>
+          <input
+            v-model="email"
+            type="email"
+            required
+            placeholder="Enter your email"
+            class="border rounded-md px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-400"
+          />
+
+          <button
+            type="submit"
+            :disabled="submitting"
+            class="bg-blue-500 text-white font-bold rounded-md py-2 hover:bg-blue-600 transition disabled:opacity-50"
+          >
+            <Spinner v-if="submitting" size="w-6 h-6" textColor="text-white" />
+             <span :class="submitting ? 'pl-6' : ''">
+                 {{ submitting ? 'Sending...' : 'Submit' }}
+            </span>
+          </button>
+
+          <p v-if="error" class="text-red-500 text-sm text-center">{{ error }}</p>
+        </template>
+
         <button
           type="button"
           @click="closeModal"
@@ -87,25 +102,52 @@
 
 <script setup>
 import { Link } from "@inertiajs/vue3";
-import { useAppStore } from "@/Stores/app";
-
 import { ref } from "vue";
+import axios from "axios";
+import Spinner from "@/Components/Spinner.vue";
 
-const appStore = useAppStore();
-
-defineProps({ html: String });
-
+const props = defineProps({
+     html: String,
+     hasOrder: Boolean,
+     templateUuid: String,
+});
 const showModal = ref(false);
 const email = ref("");
+const submitting = ref(false);
+const success = ref(false);
+const error = ref(null);
 
 function openModal() {
+  if (props.hasOrder) return;
   showModal.value = true;
+  success.value = false;
+  email.value = "";
+  error.value = null;
 }
+
 function closeModal() {
   showModal.value = false;
 }
-function submitEmail() {
-  // TODO
-  closeModal();
+
+async function submitEmail() {
+  submitting.value = true;
+  error.value = null;
+
+  try {
+    const response = await axios.post("/orders", {
+      email: email.value,
+      template_id: props.templateUuid,
+    });
+
+    if (response.data.success) {
+      success.value = true;
+    } else {
+      error.value = response.data.message || "Failed to send your order.";
+    }
+  } catch (e) {
+    error.value = e.response?.data?.message || "Unexpected error occurred.";
+  } finally {
+    submitting.value = false;
+  }
 }
 </script>

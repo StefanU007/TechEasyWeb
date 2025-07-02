@@ -89,8 +89,6 @@ import Template16 from "@/Components/templates/Template16.vue";
 import Template17 from "@/Components/templates/Template17.vue";
 import Template18 from "@/Components/templates/Template18.vue";
 
-
-
 import { useAppStore } from "@/Stores/app";
 import { ref } from "vue";
 
@@ -104,8 +102,18 @@ const template = ref();
 function goToCheckout() {
     const html = document.getElementById("template").outerHTML;
 
-    axios.post("/templates", { html }).then(({ data }) => {
-        window.location.replace(`/templates/${data.id}`);
+    const payload = {
+        html,
+        business_name: appStore.questionare.name,
+        description: appStore.questionare.desc,
+        location: appStore.questionare.location,
+        logo_path: appStore.questionare.logo,
+        image_path: appStore.questionare.image,
+        template_component_id: appStore.selectedTemplate,
+    };
+
+    axios.post("/templates", payload).then(({ data }) => {
+        window.location.replace(`/templates/${data.uuid}`);
     });
 }
 </script>
