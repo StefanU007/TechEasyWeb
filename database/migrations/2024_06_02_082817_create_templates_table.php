@@ -13,6 +13,13 @@ return new class extends Migration
     {
         Schema::create('templates', function (Blueprint $table) {
             $table->id();
+            $table->uuid('uuid')->unique();
+            $table->string('business_name')->nullable();
+            $table->text('description')->nullable();
+            $table->string('location')->nullable();
+            $table->string('logo_path')->nullable();
+            $table->string('image_path')->nullable();
+            $table->unsignedInteger('template_component_id')->default(1);
             $table->text('html');
             $table->timestamps();
         });
